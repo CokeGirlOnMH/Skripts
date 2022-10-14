@@ -1,0 +1,231 @@
+# MINING SYSTEM # 
+
+options:
+    prefix: <##06ef0f>&lT<##20f028>&lE<##3af141>&lM<##53f25a>&lP<##6df473>&lE<##87f58c>&lR<##a1f6a5>&lA<##baf7be>&lT<##d4f8d7>&lE &8»
+    world: mine
+
+on item damage:
+	cancel event
+
+command /pickaxe:
+	cooldown: 1 hour
+	trigger:
+		pickaxeGive(player)
+
+command /mine:
+	trigger:
+		execute console command "warp mine %player%"
+
+command /blocks:
+    trigger:
+        send "%{-blocks::block::mine::blocks::*}%"
+
+function registerBlocks(index: integer, id: itemtype, worth: number, name: text, p: player):
+    set {-blocks::block::blocks::ids::%{_id}%} to {_index}
+    set {-blocks::block::mine::%{_index}%} to {_id}
+    set {-blocks::block::mine::%{_index}%::worth} to {_worth}
+    set {-blocks::block::blocks::%{_index}%::name} to {_name}
+
+
+function addBackpackBlock(p: player, block: itemtype):
+    add 1 to {-mined::%{_block}%::%uuid of {_p}%}
+
+function getBackpackIndex(id: itemtype) :: integer:
+    return {-blocks::block::blocks::ids::%{_id}%}
+
+function sellBackpack(p: player):
+    set {_price} to 0
+    loop {-blocks::block::mine::*}:
+        set {_ore} to loop-value
+        set {_value} to {-mined::%{_ore}%::%uuid of {_p}%}
+        {_value} > 0
+        set {_worth} to {-blocks::block::mine::%getBackpackIndex({_ore})%::worth}
+        set {_total} to {_value} * {_worth}
+        add ({_total}) to {_price}
+        delete {-mined::%{_ore}%::%uuid of {_p}%}
+    add {_price} to {a::%uuid of {_p}%}
+    close inventory of {_p}
+    send "{@prefix} &fSold backpack for &5✪&d%{_price} ? 0%" to {_p}
+
+function backpackGui(p: player):
+    create a gui with virtual chest inventory with 5 rows named "%{_p}%'s Bag":
+        make gui slot (all integers between 0 and 45) with black stained glass pane named "&7" with all flags hidden
+        make gui slot (10,11,12,13,14,15,16,19,20,21,22,23,24,25,28,29,30,31,32,33,34) with stone button named "&7" with all flags hidden
+        make gui slot 44 with barrier named "&c&lBack to Bag Home" with lore "", "&7• &fClick to Go Back", "" with all flags hidden:
+            bags({_p})
+        make gui slot 40 with lime dye named "&aSell-all" with lore "", "&7• &aClick to sell", "":
+            sellBackpack({_p})
+        set {_slot} to 10
+        loop {-blocks::block::mine::*}:
+            set {_ore} to loop-value
+            set {_name} to "&aMined Ore"
+            set {_worth} to {-blocks::block::mine::%getBackpackIndex({_ore})%::worth}
+            set {_value} to {-mined::%{_ore}%::%uuid of {_p}%}
+            set {_total} to {_value} * {_worth}
+            if {_total} > 0:
+                make gui slot {_slot} with {_ore} named "%{_name}%" with lore "", "&7• &fAmount: %{_value}%x", "&7• &fPrice: &5✪&d%{_total}%" with all flags hidden
+                add 1 to {_slot}
+                if mod({_slot}+1, 9) = 0:
+                    add 2 to {_slot}
+    open last gui to {_p}
+
+function bags(p: player):
+    create a gui with virtual chest inventory named "Bag Selection":
+        make gui slot (all integers between 0 and 26) with black stained glass pane named "&7"
+        make gui slot 11 with shiny wheat named "&a&lFARMING BAG" with lore "", "&7• &fClick to Open", "" with all flags hidden:
+            backpackFarmGui({_p})
+        make gui slot 15 with shiny coal named "&7&lMINING BAG" with lore "", "&7• &fClick to Open", "" with all flags hidden:
+            backpackGui({_p})
+    open last gui to {_p}
+
+command /bag:
+    trigger:
+        bags(player)
+
+command /minebp:
+    aliases: /minebackpack
+    trigger:
+        backpackGui(player)
+
+on load:
+    delete {-blocks::block::mine::*}
+    delete {-blocks::block::mine::*}
+    registerBlocks(1, coal ore, 24, "<##323030>Coal Ore", player)
+    registerBlocks(2, iron ore, 26, "&fIron Ore", player)
+    registerBlocks(3, gold ore, 28, "&6Gold Ore", player)
+    registerBlocks(4, diamond ore, 34, "&bDiamond Ore", player)
+    registerBlocks(5, emerald ore, 36, "&aEmerald Ore", player)
+    registerBlocks(6, beacon, 44, "&bBeacon", player)
+
+every 5 seconds:
+    loop {-blocks::block::mine::*}:
+        loop {-blocks::mines::%loop-value-1%::*}:
+            set block at loop-value-2 to loop-value-1
+
+
+on break:
+    set {_total} to 0
+    if event-world is "{@world}":
+        clear drops
+        set {_block} to event-block
+        if {-blocks::block::mine::*} contains event-block:
+            loop {-blocks::block::mine::*}:
+                if {_block} = loop-value:
+                    set {_fort} to (tag "fortune" of nbt of player's tool)
+                    set {_fort} to {_fort} parsed as an integer
+                    addBackpackBlock(player, {_block})
+                    set {_cry} to (tag "crystalize" of nbt of player's tool)
+                    set {_key} to (tag "keygreed" of nbt of player's tool)
+                    set {_exp} to (tag "experience" of nbt of player's tool)
+                    set {_charity} to (tag "charity" of nbt of player's tool)
+                    chance of ({_cry} * 0.125)%:
+                        add (random integer between 1 and 5) * ({_cry} * 0.25) to {_ame}
+                        add {_ame} to {a::%uuid of player%}
+                        send action bar "{@prefix} &fGained &5%{_ame}%x &fAmethysts" to player
+                    chance of ({_key} * 0.1)%:
+                        set {_crates_list::*} to "Okapi", "Tapir", "Gorilla", "Jaguar", "Coati"
+                        set {_crate_name} to random element out of {_crates_list::*}
+                        execute console command "/crate give %player% %{_crate_name}% 1"
+                        send action bar "{@prefix} &fGained &a1 &fKey" to player 
+                    chance of ({_charity} * 0.015)%:
+                        loop all players:
+                            add (random integer between 10 and 25) * ({_fort} ? 1) to loop-player's balance
+                            send action bar "{@prefix} &fGained &aCharity Money &ffrom %player%" to loop-player
+            add location of event-block to {-blocks::mines::%type of event-block%::*}
+            set event-block to bedrock
+        else:
+            cancel event
+on respawn:
+	wait 1 tick
+	teleport player to {spawn}
+
+on join:
+    if {-backpack::storage::space::%uuid of player%} is not set:
+        set {-backpack::storage::space::%uuid of player%} to 50
+    loop {-blocks::block::mine::*}:    
+        set {_ore} to loop-value
+        if {_mined::%{_ore}%::%uuid of player%} < 0:
+            set {_mined::%{_ore}%::%uuid of player%} to 0
+
+function enchantGui(p: player):
+    create a gui with virtual chest inventory with 3 rows named "{@prefix} &fMining Enchants":
+        make gui slot (all integers between 0 and 26) with black stained glass pane named "&7" with all flags hidden
+        set {_slot} to 10
+        loop {-mining::enchants::*}:
+            set {_index} to loop-index parsed as number
+            set {_id} to {-mining::enchants::%loop-index%::id}
+            set {_item} to {-mining::enchants::%loop-index%::item}
+            set {_name} to {-mining::enchants::%loop-index%::name}
+            set {_col} to {-mining::enchants::%loop-index%::color}
+            set {_desc} to {-mining::enchants::%loop-index%::description}
+            set {_max_level} to {-mining::enchants::%loop-index%::max_level}
+            set {_price_multi} to {-mining::enchants::%loop-index%::price_multi}
+            set {_level} to tag {_id} of nbt of {_p}'s tool
+            set {_price} to ({_level} + 1) * {_price_multi}
+
+            format gui slot {_slot} with glowing {_item} named "%{_name}%" with lore " ", "&f%{_desc}%", " ", "%{_col}%▸ Enchant Stats", "%{_col}%▸ &7Level: &a%{_level}%&7/&c%{_max_level}%", "%{_col}%▸ &7Price: &f%format({_price})% Crystals", " ", "&fClick &7to enchant your pickaxe with %{_col}%&l%{_name}%" with all flags hidden:
+                if "%click type%" contains "Left":
+                    set {_price} to ({_level} + 1) * {_price_multi}
+
+                else if "%click type%" contains "Right":
+                    add 9 to {_level}
+                    loop 9 times:
+                        add (({_level} + loop-value) * {_price_multi}) to {_price}
+
+                if {_level} >= {_max_level}:
+                    send "{@prefix} &7Upgrading this enchant would make it go over the max level!" to {_p}
+                    close inventory of {_p}
+
+                else if {_price} > {a::%uuid of {_p}%}:
+                    send "{@prefix} &7You need more &5Amethysts!" to {_p}
+                    close inventory of {_p} 
+                else:
+                    remove {_price} from {a::%uuid of {_p}%}
+                    add 1 to {_level}
+                    add "{%{_id}%:%{_level}%}" to nbt of {_p}'s tool
+                    set line {_index} + 3 of lore of {_p}'s tool to "&f&l▸ &7%uncolored {_name}%: &f%{_level}%"
+                    enchantGui({_p})
+            add 1 to {_slot}
+            if mod({_slot}+2, 9) = 0:
+                add 2 to {_slot}
+    open last gui to {_p}
+
+
+
+on load:
+    delete {-mining::enchants::*}
+    registerMiningEnchant(1, "fortune", emerald, "&bFortune", "Gives more blocks per block mined", 50, round(25 * 2 ^ 1.35))
+    registerMiningEnchant(2, "crystalize", large amethyst bud, "&5Crystalize", "Chance to recieve Amethysts while mining", 25, round(37.5 * 2 ^ 1.35))
+    registerMiningEnchant(3, "keygreed", tripwire hook, "&fKey Greed", "Chance to find keys while mining", 5,   round(60 * 2 ^ 1.35))
+    registerMiningEnchant(4, "experience", experience bottle, "&aExperience", "Chance to gain Level EXP while mining", 10, round(50 * 2 ^ 1.35))
+    registerMiningEnchant(5, "charity", enchanted book, "&2Charity", "Gift all online players some cash!", 10, round(50 ^ 1.35))
+
+
+function registerMiningEnchant(index: number, id: string, item: itemtype, name: string, description: string, max_level: number, price_multi: number):
+    set {-mining::enchants::%{_index}%} to true
+    set {-mining::enchants::%{_index}%::id} to {_id}
+    set {-mining::enchants::%{_index}%::item} to {_item}
+    set {-mining::enchants::%{_index}%::name} to {_name}
+    set {-mining::enchants::%{_index}%::color} to last color of {_name}
+    set {-mining::enchants::%{_index}%::description} to {_description}
+    set {-mining::enchants::%{_index}%::max_level} to {_max_level}
+    set {-mining::enchants::%{_index}%::price_multi} to {_price_multi}
+
+function pickaxeGive(p: player):
+    set {_playername} to name of {_p} 
+    set {_pick} to diamond pickaxe named "&a&l%{_p}%'s Breaker" with lore " ", "&f⤷ &7Enchantments", " ", "&f&l▸ &7Fortune: &f0", "&f&l▸ &7Crystalize: &f0", "&f&l▸ &7Key Greed: &f0", "&f&l▸ &7Experience: &f0", "&f&l▸ &7Charity: &f0" with all flags hidden
+
+    add "{fortune:0}" to nbt of {_pick}
+    add "{keygreed:0}" to nbt of {_pick}
+    add "{crystalize:0}" to nbt of {_pick}
+    add "{experience:0}" to nbt of {_pick}
+    add "{charity:0}" to nbt of {_pick}
+
+    enchant {_pick} with efficiency 3
+    give {_p} 1 of {_pick}
+    send "{@prefix} &fYou have recieved a pickaxe!" to {_p}    
+    
+on right click with diamond pickaxe:
+	name of player's tool contains "%player%"
+	player is sneaking
+	enchantGui(player)
