@@ -1,0 +1,87 @@
+# COKEGIRL BOOST #
+
+options:
+    prefix: &7Put Server Name Here &8»
+    boostitem: emerald
+    boostname: &dBooster
+
+function boostGui(p: player):
+    create a gui with virtual dropper inventory named "Boosters":
+        make gui slot (all integers between 0 and 8) with black stained glass pane named "&7" with all flags hidden
+        if {booster::activated::%uuid of {_p}%} ? false is false:
+            make gui slot 3 with barrier named "&cNo Booster Activated!" with lore "", "&7• &cNo Boosters Active", "" with all flags hidden
+        if {booster::activated::global} ? false is false:
+            make gui slot 5 with barrier named "&cNo Booster Activated!" with lore "", "&7• &cNo Boosters Active", "" with all flags hidden
+        else if {booster::activated::%uuid of {_p}%} ? false is true:
+            set {_type} to {booster::lastactivated::type::%uuid of {_p}%}
+            make gui slot 3 with emerald named "&aPersonal Booster is Activated!" with lore "", "&7• &fTime: &a%{booster::lastactivated::time::%uuid of {_p}%}%m", "&7• &fType: %{booster::lastactivated::type::%uuid of {_p}%}%", "&7• &fMulti: &f%{booster::lastactivated::multi::%uuid of {_p}%::%{_type}%}%x", "" with all flags hidden
+        if {booster::activated::global} ? false is true:
+            set {_type} to {booster::lastactivated::type::global}
+            make gui slot 5 with emerald named "&aGlobal Booster is Activated!" with lore "", "&7• &fTime: &a%{booster::lastactivated::time::global}%m", "&7• &fType: %{booster::lastactivated::type::global}%", "&7• &fMulti: &f%{booster::lastactivated::multi::global::%{_type}%}%x", "" with all flags hidden
+    
+    open last gui to {_p}
+    
+function boostRedeem(p: player):
+    set {_porg} to (tag "gorp" of nbt of {_p}'s tool)
+    if {_porg} contains "personal":
+        set {booster::activated::%uuid of {_p}%} to true
+        set {_time} to (tag "time" of nbt of {_p}'s tool)
+        set {booster::lastactivated::time::%uuid of {_p}%} to {_time}
+        set {booster::lastactivated::type::%uuid of {_p}%} to (tag "type" of nbt of {_p}'s tool)
+        set {_type} to (tag "type" of nbt of {_p}'s tool)
+        set {booster::lastactivated::multi::%uuid of {_p}%::%{_type}%} to (tag "multi" of nbt of {_p}'s tool)
+        send "{@prefix} &fPersoanl Booster Activated" to {_p}
+    else:
+        set {booster::activated::global} to true
+        set {_time} to (tag "time" of nbt of {_p}'s tool)
+        set {booster::lastactivated::time::global} to {_time}
+        set {booster::lastactivated::type::global} to (tag "type" of nbt of {_p}'s tool)
+        set {_type} to (tag "type" of nbt of {_p}'s tool)
+        set {booster::lastactivated::multi::global::%{_type}%} to (tag "multi" of nbt of {_p}'s tool)
+        broadcast "", "{@prefix} &fGlobal %{booster::lastactivated::multi::global::%{_type}%}%x %{booster::lastactivated::type::global} in proper case% Booster is now live for %{_time}% minutes!", ""    
+    remove 1 of {_p}'s tool from inventory of {_p}
+
+command /givebooster [<player>] [<text>] [<number>] [<integer>] [<text>]:
+    permission: boost.admin
+    trigger:
+        set {_i} to netherite axe with nbt {_n}
+        set {_item} to {@boostitem} named "{@boostname}" with lore "", "&7• &fTime: &a%arg-4%m", "&7• &fType: &a%arg-2%", "&7• &fMulti: &a%arg-3%", "&7• &f%arg-5%" with all flags hidden
+        add "{type:%arg-2%}" to nbt of {_item}
+        add "{multi:%arg-3%}" to nbt of {_item}
+        add "{time:%arg-4%}" to nbt of {_item}
+        add "{gorp:%arg-5%}" to nbt of {_item}
+        send "%nbt of {_item}%"
+        give arg-1 {_item}
+        send "{@prefix} &fGiven %arg-1% 1 %arg-5 in proper case% %arg-4%m Booster of %arg-3%x" to player
+
+on right click with {@boostitem}:
+    if {booster::activated::%uuid of player%} ? false is false:
+        boostRedeem(player)
+    else if {booster::activated::global} ? false is false:
+        boostRedeem(player)
+
+on join:
+    while player is online: 
+        wait 1 minute
+        if {booster::activated::%uuid of player%} ? false is true:
+            remove 1 from {booster::lastactivated::time::%uuid of player%}
+            if {booster::lastactivated::time::%uuid of player%} is 0:
+                set {booster::activated::%uuid of player%} to false
+                set {booster::lastactivated::multi::%uuid of player%::*} to 1
+                send "{@prefix} &fBooster Ended" to player
+        else if {booster::activated::global} ? false is true:
+            remove 1 from {booster::lastactivated::time::global}
+            if {booster::lastactivated::time::global} is 0:
+                set {booster::activated::global} to false
+                set {booster::lastactivated::multi::global::*} to 1
+                send "{@prefix} &fBooster Ended" to player        
+
+command /clearboosters:
+	permission: op
+	trigger:
+		delete {booster::*}
+
+command /boosters:
+    permission: op
+    trigger:
+        boostGui(player)
