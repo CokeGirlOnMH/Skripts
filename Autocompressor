@@ -1,0 +1,42 @@
+# 4kc3m1ra AUTOCOMPRESSOR #
+
+options:
+    prefix: &5&lEndVade &8»
+    world: void #world where people mine the ores
+    blocks: stone #list all the blocks people mine for autocompressor to activate
+
+function registerCompress(index: integer, id: integer, block: itemtype, next: itemtype, amount: integer, name: text):
+    set {-compress::blocks::%{_index}%} to {_index}
+    set {-compress::blocks::ids::%{_id}%} to {_index}
+    set {-compress::blocks::%{_index}%::block} to {_block}
+    set {-compress::blocks::%{_index}%::nextblock} to {_next}
+    set {-compress::blocks::%{_index}%::amount} to {_amount}
+    set {-compress::blocks::%{_index}%::name} to {_name}
+
+on load:
+    delete {-compress::blocks::*}
+    registerCompress(1, 1, cobblestone, stone, 16, "&7Compressed Cobblestone")
+
+command /autocompressor:
+    permission: autocompress.use
+    trigger:
+        if {compress::%uuid of player%} ? false is false:
+            set {compress::%uuid of player%} to true
+            send "{@prefix} &fAuto Compressor Activated!"
+        else:
+            set {compress::%uuid of player%} to false
+            send "{@prefix} &fAuto Compressor Deactivated!"
+
+
+on block break of {@blocks}:
+    event-world is "{@world}"
+    if {compress::%uuid of player%} is true:
+        loop {-compress::blocks::*}:
+            set {_block} to {-compress::blocks::%loop-index%::block}
+            set {_amount} to {-compress::blocks::%loop-index%::amount}
+            set {_name} to {-compress::blocks::%loop-index%::name}
+            set {_next} to {-compress::blocks::%loop-index%::nextblock}
+            set {_amountinv} to amount of {_block} in player's inventory 
+        if {_amountinv} >= {_amount}:
+            remove {_amount} of {_block} from player's inventory
+            give 1 of glowing {_next} named "%{_name}%" to player
