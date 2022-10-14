@@ -1,0 +1,40 @@
+# COKEGIRL PICKAXES #
+
+options:
+    prefix: <##f7b267>&lT<##f6a464>&lu<##f59561>&ll<##f5875e>&li<##f4795a>&lp<##f36a57>&le<##f25c54>&ld &8•
+    pickaxeitem: diamond pickaxe 
+
+on item damage:
+    cancel event
+
+function Information_ProgressBar(int: integer, max: integer, barsize: integer) :: string:
+    stop if {_int} < 0
+    stop if {_max} < 0
+    stop if {_barsize} < 1
+    loop {_barsize} times:
+        set {_bar} to "%{_bar} ? ""%|"
+    return "&a%((first floor({_barsize} * ({_int}/{_max})) characters of {_bar}) ? "")%&c%(last {_barsize} - floor({_barsize} * ({_int}/{_max})) characters of {_bar}) ? ""%"
+
+command /pickaxe [<player>]:
+    trigger:
+        if arg-1 is not set:
+            set {_player} to "%player%"
+        else:
+            set {_player} to arg-1
+        set {_pick} to shiny {@pickaxeitem} named "<##f7b267>&kii <##f7b267>&l%{_player}%'s Pickaxe <##f7b267>&kii" with lore "", "&f↪ <##f5875e>Leveling", "&7• &fLevel <##f6a464>0 &8(&c||||||||||&8)", "", "&f↪ <##f25c54>Enchantments", "&7• &fFortune 0", "", "&7&o%{_player}%'s Pickaxe" with all flags hidden
+        add "{fortune::0}" to nbt of {_pick}
+        enchant {_pick} with efficiency 100
+        give {_pick} to {_player}
+
+function updatePickaxeLevel(p: player):
+    set {_uuid} to uuid of {_p}
+    set {_exp} to round {pickaxe::current_exp::%uuid of {_p}%} ? 0
+    set {_needed_exp} to round({pickaxe::current_level::%{_uuid}%}*25*2^({pickaxe::current_level::%{_uuid}%}/25+1)) ? 0
+    set {_progress_bar} to Information_ProgressBar({_exp}, {_needed_exp}, 10)
+    set line 3 of lore of {_p}'s tool to "&7• &fLevel <##f6a464>%{pickaxe::current_level::%{_uuid}%} ? 0% &8(%{_progress_bar}%&8)"
+
+on join:
+    while player is online:
+        if player's tool is diamond pickaxe:
+            updatePickaxeLevel(player)
+        wait 5 seconds
