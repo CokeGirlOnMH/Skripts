@@ -1,0 +1,36 @@
+# FOLIUM TRIAL BUBBLE SORT #
+
+function bubbleSort(int: objects, hol: string, p: player) :: objects:  
+    set {_list::*} to {_int::*}
+    if {_hol} is "lth":
+        loop 100 times:
+            loop {_list::*}:
+                set {_temp} to {_list::%loop-index%}
+                set {_index} to loop-index parsed as a number
+                set {_temp2} to {_list::%{_index} + 1%}
+                set {_list::%loop-index%} to {_temp2} if {_temp2} <= {_temp}
+                set {_list::%{_index} + 1%} to {_temp} if {_temp2} <= {_temp}
+            
+        return {_list::*}
+    loop 100 times:
+        loop {_list::*}:
+            set {_temp} to {_list::%loop-index%}
+            set {_index} to loop-index parsed as a number
+            set {_temp2} to {_list::%{_index} + 1%}
+            set {_list::%loop-index%} to {_temp2} if {_temp2} >= {_temp}
+            set {_list::%{_index} + 1%} to {_temp} if {_temp2} >= {_temp}
+    return {_list::*}
+
+command /bubblesort:
+    trigger:
+        loop 100 times:
+            add (random integer between 1 and 100) to {_list::*}
+        send "&fUnsorted List: &7%{_list::*}%" to player
+        create a gui with virtual chest inventory named "Bubble Sorting!":
+            make gui slot 13 with diamond named "&f" with lore "", "&7• &fRight Click to Sort by Low to High!", "&7• &fLeft Click to Sort from High to Low!", "" with all flags hidden:
+                if "%click type%" contains "Right":
+                    set {_numbers::*} to bubbleSort(({_list::*}), "lth", player)
+                    send "&fSorted List: &7%{_numbers::*}%"
+                if "%click type%" contains "Left":
+                    send "&fSorted List: &7%bubbleSort({_list::*}, "htl", player)%"
+        open last gui to player
