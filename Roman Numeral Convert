@@ -1,0 +1,17 @@
+# ROMAN NUMERAL CONVERT #
+
+function getRoman(current: integer, p: player) :: text:
+    set {_values::*} to "M", "XM", "CM", "D", "XD", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"
+    set {_numbers::*} to 1000, 990, 900, 500, 490, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1
+    loop {_values::*}:
+        set {_requirement} to {_numbers::%loop-index%}
+        send "current: %{_current}%", "req: %{_requirement}%" to {_p}
+        while {_current} >= {_requirement}:
+            remove {_requirement} from {_current}
+            set {_roman} to "%{_roman} ? ""%%loop-value-1%"
+    return {_roman}
+
+command /test [<integer>]:
+    trigger:
+        set {_num} to ("%arg-1%" parsed as an integer)
+        send getRoman({_num}, player)
