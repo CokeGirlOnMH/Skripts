@@ -1,0 +1,60 @@
+# FOLIUM TRAIL LOOTBOXES #
+
+options:
+    prefix: &3&lFOLIUMPVP &8»
+
+function lootboxOpen(p: player, loc: location):
+    set {_items::*} to emerald, diamond, coal, dirt, grass block, stone, cobblestone, iron ore, gold ore, diamond ore, oak leaves, chest, oak planks, jungle planks, acacia planks, carved pumpkin, pumpkin, lapis ore, vines, chain, enchanting table
+    remove 2 from y-coord of {_loc}
+    set {box} to true
+    spawn an armor stand at {_loc}
+    set {_as} to last spawned armor stand
+    set visibility of {_as} to false
+    set helmet of {_as} to chest
+    set {_as}'s gravity to off
+    loop 360 times:
+        set {_value} to ("%loop-value%" parsed as a number) + 90
+        set float list tag "Rotation" of nbt compound of {_as} to ({_value})
+        add 0.0138 to y-coord of {_loc} 
+        wait 1 tick
+        teleport {_as} to {_loc}
+    draw 10 explosion particle at {_loc}
+    play sound "entity.generic.explode" with pitch 5 to {_p}
+    delete last spawned armor stand
+    loop 5 times:
+        set {_item} to random element of {_items::*}
+        remove {_item} from {_items::*}
+        add 2 to y-coord of {_loc}
+        create a new holo with lines "{@prefix} &a&nReward:&r &f%loop-value%" and ("%{_item}%" parsed as an item) at {_loc} 
+        play sound "entity.experience_orb.pickup" with pitch 5 to {_p}
+        wait 2 seconds
+        delete last created holo
+        drop 1 of {_item} at {_loc}
+        remove 2 from y-coord of {_loc}
+        add {_item} to {_itemlist::*}
+    draw 10 explosion particle at {_loc}
+    play sound "entity.generic.explode" with pitch 5 to {_p}
+    broadcast "{@prefix} &f%{_p}% &fopened a &3&l&nFOLIUMPVP&r Lootbox"
+    loop {_itemlist::*}:
+        set {_value} to ("%loop-value%" parsed as an item)
+        set {_value} to "%{_value}%"
+        broadcast "&3##%loop-index% &7» &f%{_value} in proper case%"
+    play sound "entity.ender_dragon.growl" to {_p}
+    set {box} to false
+
+command /givelootbox:
+    trigger:
+        give player 1 of chest named "{@prefix} &fLootbox"
+        send "{@prefix} &fGiven a lootbox"
+
+on place of chest:
+    set {box} to false if {box} is not set
+    if {box} is false:
+        name of player's tool is "{@prefix} &fLootbox"
+        cancel event
+        remove 1 of player's tool from player's inventory
+        lootboxOpen(player, location of event-block)
+    else:
+        send "{@prefix} &fSomeone is opening a Lootbox!" to player
+        cancel event
+
